@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Image Judge</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<header class="top">
+  <h1>Image Judge</h1>
+  <nav aria-label="Main">
+    <a href="/" aria-current="page">Judge</a>
+    <a href="/train">Train &amp; Test</a>
+    <a href="/lessons">Lessons</a>
+    <a href="/benchmark">Benchmark</a>
+    <a href="/help">Help</a>
+  </nav>
+</header>
+<main>
+  <div id="key-warning" class="banner warn" hidden>
+    The selected model isn't usable on the server. Log in to the Codex or Claude Code CLI for local CLI models, or set <code>GEMINI_API_KEY</code> / <code>ANTHROPIC_API_KEY</code>, then restart.
+  </div>
+
+  <details class="card" id="howto" open>
+    <summary><strong>How this works</strong> (click to hide)</summary>
+    <p style="margin-bottom:6px">An AI editor was asked to do something and gave you two results, <strong>A</strong> and
+      <strong>B</strong>. This asks an AI judge which one better does what was asked. <strong>You teach it</strong>: check its
+      answer, and when it is wrong or unsure, write one sentence on why.</p>
+    <ol style="margin-top:6px">
+      <li>Paste the request, then add the original image(s), Result A and Result B.</li>
+      <li>Press <strong>Evaluate</strong> and wait about a minute.</li>
+      <li>Mark it <strong>Correct</strong> or <strong>Wrong</strong> (and say why). That is what it learns from.</li>
+    </ol>
+    <p class="hint" style="margin-bottom:0"><strong>Confident</strong> = every check agreed. <strong>Review</strong> = mostly agreed, so
+      check it. <strong>Unclear</strong> = no verdict, so you decide. <a href="/help">Full guide</a></p>
+  </details>
+
+  <form id="judge-form" novalidate>
+    <section class="card">
+      <label class="field" for="prompt">1. Prompt</label>
+      <textarea id="prompt" name="prompt" required placeholder="e.g. Replace the red car with a blue bicycle and keep everything else the same"></textarea>
+    </section>
+
+    <section class="card">
+      <h2>2. Images</h2>
+      <p class="hint" id="paste-hint">
+        Paste with Ctrl/Cmd+V, drag and drop, or click a box to upload.
+        Pasted images go to the highlighted box: <strong id="paste-target-name">Originals</strong>.
+      </p>
+      <div class="zones" style="margin-top:12px">
+        <div class="zone" id="zone-originals" data-slot="originals" tabindex="0" role="button"
+             aria-describedby="paste-hint" aria-label="Original images, 1 to 4. Press Enter to upload.">
+          <div class="zone-head"><span class="zone-title">Originals (1–10)</span><span class="zone-badge"></span></div>
+          <p class="zone-empty">No original images yet.</p>
+          <div class="thumbs"></div>
+          <input type="file" accept="image/*" multiple class="sr-only" tabindex="-1" aria-hidden="true">
+        </div>
+      </div>
+      <div class="zones results" style="margin-top:16px">
+        <div class="zone single" id="zone-a" data-slot="a" tabindex="0" role="button"
+             aria-describedby="paste-hint" aria-label="Result A. Press Enter to upload.">
+          <div class="zone-head"><span class="zone-title">Result A</span><span class="zone-badge"></span></div>
+          <p class="zone-empty">No image yet.</p>
+          <div class="thumbs"></div>
+          <input type="file" accept="image/*" class="sr-only" tabindex="-1" aria-hidden="true">
+        </div>
+        <div class="zone single" id="zone-b" data-slot="b" tabindex="0" role="button"
+             aria-describedby="paste-hint" aria-label="Result B. Press Enter to upload.">
+          <div class="zone-head"><span class="zone-title">Result B</span><span class="zone-badge"></span></div>
+          <p class="zone-empty">No image yet.</p>
+          <div class="thumbs"></div>
+          <input type="file" accept="image/*" class="sr-only" tabindex="-1" aria-hidden="true">
+        </div>
+      </div>
+    </section>
+
+    <details class="card" id="advanced-save">
+      <summary><strong>Advanced:</strong> save without judging (for building batches to train or test on)</summary>
+      <h2 id="save-title" class="sr-only">Save to a task set</h2>
+      <div class="grid2">
+        <div>
+          <label class="field" for="save-set">Task set</label>
+          <select id="save-set"><option value="">Loading…</option></select>
+          <input type="text" id="new-set-name" placeholder="Name of the new set, e.g. Train 1" hidden
+                 aria-label="Name of the new set" style="margin-top:8px">
+        </div>
+        <fieldset class="answer-pick">
+          <legend class="field">Correct answer</legend>
+          <label><input type="radio" name="save-label" value="A"> A</label>
+          <label><input type="radio" name="save-label" value="B"> B</label>
+          <label><input type="radio" name="save-label" value="" checked> Not known yet</label>
+        </fieldset>
+      </div>
+      <div class="actions" style="margin-top:12px">
+        <button type="button" class="secondary" id="save-btn" disabled>Save task to set</button>
+        <span class="hint" id="save-status" role="status" aria-live="polite"></span>
+      </div>
+      <p class="hint">Saving doesn't judge the task. It keeps it for a Train, Test or Judge run on the
+        <a href="/train">Train &amp; Test</a> page. After saving, the images and prompt clear so you can paste the next one.</p>
+    </details>
+
+    <section class="card">
+      <p class="hint">Click <strong>Evaluate</strong>. Then tell it whether it was right: when it's wrong
+        (or unsure), write why the other result is correct and it learns from that straight away.</p>
+      <p class="hint" id="knowledge-line"></p>
+      <div class="actions">
+        <button type="submit" class="primary" id="evaluate-btn" disabled>Evaluate</button>
+        <button type="button" class="secondary" id="reset-btn">Clear all</button>
+        <label class="check"><input type="checkbox" id="fresh"> Re-run (ignore cached judgments)</label>
+      </div>
+      <p class="hint" id="form-status" role="status" aria-live="polite"></p>
+    </section>
+  </form>
+
+  <section class="card" id="result" hidden aria-live="polite" tabindex="-1">
+    <h2>Verdict</h2>
+    <div id="result-body"></div>
+  </section>
+
+  <section class="card">
+    <h2>Recent evaluations</h2>
+    <div id="history"><p class="hint">None yet.</p></div>
+  </section>
+</main>
+<script src="/static/common.js"></script>
+<script src="/static/app.js?v=guide-v5-5"></script>
+</body>
+</html>

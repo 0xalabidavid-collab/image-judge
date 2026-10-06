@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lessons - Image Judge</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
+      border: 1px solid var(--border); }
+    .badge.active { background: var(--ok-bg); color: var(--ok); border-color: transparent; }
+    .badge.candidate { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
+    .badge.rejected { background: var(--bad-bg); color: var(--bad); border-color: transparent; }
+    .badge.muted { color: var(--muted); }
+    .version { border-top: 1px solid var(--border); padding: 14px 0; }
+    .version:first-child { border-top: 0; }
+    .version header { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; }
+    .version .meta { color: var(--muted); font-size: 14px; }
+    .version ul { margin: 6px 0; padding-left: 20px; }
+    .version li.added::marker { content: "+ "; color: var(--ok); font-weight: 700; }
+    .version li.removed { color: var(--muted); text-decoration: line-through; }
+    .version li.removed::marker { content: "− "; color: var(--bad); font-weight: 700; }
+    .row-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .gate-line { margin: 6px 0; font-size: 14px; }
+    .answer { border-top: 1px solid var(--border); padding: 12px 0; display: grid; gap: 8px; }
+    .answer:first-child { border-top: 0; }
+    .answer .thumbs { display: flex; gap: 8px; }
+    .answer .thumbs figure { margin: 0; font-size: 12px; color: var(--muted); }
+    .answer .thumbs img { height: 72px; width: auto; border-radius: 6px; border: 1px solid var(--border); display: block; }
+    .answer textarea { width: 100%; box-sizing: border-box; min-height: 52px; }
+    .tight { margin: 0 0 8px; }
+    body.read-only [data-act="use"], body.read-only [data-act="reject"] { display: none; }
+  </style>
+</head>
+<body>
+<header class="top">
+  <h1>Image Judge</h1>
+  <nav aria-label="Main">
+    <a href="/">Judge</a>
+    <a href="/train">Train &amp; Test</a>
+    <a href="/lessons" aria-current="page">Lessons</a>
+    <a href="/benchmark">Benchmark</a>
+    <a href="/help">Help</a>
+  </nav>
+</header>
+<main>
+  <div id="error" class="banner error" role="alert" hidden></div>
+
+  <section class="card" aria-labelledby="now-title">
+    <h2 id="now-title" class="tight">In use right now</h2>
+    <p id="now" aria-live="polite">Loading…</p>
+    <div class="row-actions">
+      <button type="button" class="secondary" id="undo">Undo the last change</button>
+      <button type="button" class="secondary" id="off">Switch off all lessons</button>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="gate-title">
+    <h2 id="gate-title" class="tight">Automatic training</h2>
+    <p id="gate-explain" class="hint"></p>
+    <p id="gate-status" role="status" aria-live="polite"></p>
+    <div class="row-actions"><button type="button" class="secondary" id="test-now" hidden>Test the waiting lessons now</button></div>
+  </section>
+
+  <section class="card" aria-labelledby="reasons-title">
+    <h2 id="reasons-title" class="tight">Reasons</h2>
+    <p id="reasons-summary"></p>
+    <p class="hint">A one-line reason on each wrong or unsure answer is what teaches it best. Add the missing ones below;
+      <strong>Save &amp; learn</strong> also writes a lesson from it (tested before it is used).</p>
+    <div id="missing"></div>
+  </section>
+
+  <section class="card" aria-labelledby="history-title">
+    <h2 id="history-title" class="tight">Version history</h2>
+    <div id="history">Loading…</div>
+  </section>
+</main>
+<script src="/static/common.js"></script>
+<script src="/static/lessons.js"></script>
+</body>
+</html>

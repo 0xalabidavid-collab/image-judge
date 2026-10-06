@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Image Judge Benchmark</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<header class="top">
+  <h1>Image Judge</h1>
+  <nav aria-label="Main">
+    <a href="/">Judge</a>
+    <a href="/train">Train &amp; Test</a>
+    <a href="/lessons">Lessons</a>
+    <a href="/benchmark" aria-current="page">Benchmark</a>
+    <a href="/help">Help</a>
+  </nav>
+</header>
+<main>
+  <div id="key-warning" class="banner warn" hidden>
+    The selected model isn't usable on the server. Log in to the Codex or Claude Code CLI for local CLI models, or set <code>GEMINI_API_KEY</code> / <code>ANTHROPIC_API_KEY</code>, then restart.
+  </div>
+
+  <section class="card">
+    <h2>Run a benchmark</h2>
+    <form id="bench-form">
+      <div class="grid2">
+        <div>
+          <label class="field" for="dataset">Dataset path (on the server)</label>
+          <input type="text" id="dataset" required placeholder="datasets/synthetic">
+          <p class="hint">A folder with <code>tasks.csv</code>, a CSV file, or a folder of task folders. See README.</p>
+        </div>
+        <div>
+          <label class="field" for="runs">Runs per task</label>
+          <input type="number" id="runs" min="1" max="16">
+        </div>
+        <div>
+          <label class="field" for="rubric">Rubric</label>
+          <select id="rubric"></select>
+        </div>
+        <div>
+          <label class="field" for="effort">Effort</label>
+          <select id="effort">
+            <option>low</option><option>medium</option><option>high</option><option>xhigh</option><option>max</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid2" style="margin-top:12px">
+        <div>
+          <label class="field" for="model">Model</label>
+          <input type="text" id="model">
+        </div>
+        <div>
+          <label class="field" for="limit">Limit (first N tasks)</label>
+          <input type="number" id="limit" min="1" placeholder="all">
+        </div>
+        <div class="span2">
+          <label class="field" for="note">Note</label>
+          <input type="text" id="note" placeholder="what changed in this run">
+        </div>
+      </div>
+      <div class="actions" style="margin-top:12px">
+        <button type="submit" class="primary" id="start-btn" disabled>Start benchmark</button>
+        <label class="check"><input type="checkbox" id="no-cache"> Ignore cached judge calls</label>
+      </div>
+      <p class="hint" id="bench-status" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+
+  <section class="card" id="current" hidden tabindex="-1">
+    <h2 id="current-title">Run</h2>
+    <div id="current-body"></div>
+  </section>
+
+  <section class="card">
+    <h2>Past runs</h2>
+    <div id="runs-list"><p class="hint">None yet.</p></div>
+  </section>
+</main>
+<script src="/static/common.js"></script>
+<script src="/static/bench.js"></script>
+</body>
+</html>

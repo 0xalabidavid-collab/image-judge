@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Image Judge Training</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<header class="top">
+  <h1>Image Judge</h1>
+  <nav aria-label="Main">
+    <a href="/">Judge</a>
+    <a href="/train" aria-current="page">Train &amp; Test</a>
+    <a href="/lessons">Lessons</a>
+    <a href="/benchmark">Benchmark</a>
+    <a href="/help">Help</a>
+  </nav>
+</header>
+<main>
+  <div id="key-warning" class="banner warn" hidden>
+    The selected model isn't usable on the server. Log in to the Codex or Claude Code CLI for local CLI models,
+    or set <code>GEMINI_API_KEY</code> / <code>ANTHROPIC_API_KEY</code>, then restart.
+  </div>
+
+  <section class="card" aria-labelledby="run-title">
+    <h2 id="run-title">Run</h2>
+    <form id="run-form">
+      <fieldset class="mode-cards" style="border:0;padding:0;margin:0">
+        <legend class="sr-only">What to do</legend>
+        <label class="mode-card">
+          <span class="t"><input type="radio" name="mode" value="train" checked>Train</span>
+          <p class="hint">Judges a set whose correct answers you've marked, studies every task it got wrong or
+            wasn't sure about, and writes lessons from them. Later judgments read the lessons.</p>
+        </label>
+        <label class="mode-card">
+          <span class="t"><input type="radio" name="mode" value="test">Test (score it)</span>
+          <p class="hint">Judges a set without seeing the answers, then scores it against the answers you marked,
+            before or after the run. Use tasks it was never trained on.</p>
+        </label>
+        <label class="mode-card">
+          <span class="t"><input type="radio" name="mode" value="judge">Judge only</span>
+          <p class="hint">Just gives a verdict for every task. No answers needed. You can still mark answers
+            afterwards to see a score.</p>
+        </label>
+      </fieldset>
+
+      <div class="grid2" style="margin-top:16px">
+        <div>
+          <label class="field" for="run-set">Task set</label>
+          <select id="run-set" required></select>
+          <p class="hint" id="run-set-info"></p>
+        </div>
+        <div>
+          <label class="field" for="run-knowledge">Lessons</label>
+          <select id="run-knowledge"></select>
+        </div>
+        <div>
+          <label class="field" for="run-runs">Runs per task</label>
+          <input type="number" id="run-runs" min="1" max="16">
+        </div>
+        <div>
+          <label class="field" for="run-model">Model</label>
+          <input type="text" id="run-model">
+        </div>
+      </div>
+      <div class="actions" style="margin-top:12px">
+        <label class="check" id="compare-wrap"><input type="checkbox" id="run-compare">
+          Also run without lessons, to see what training changed (doubles the time)</label>
+        <label class="check" id="cases-wrap">Learn from up to
+          <input type="number" id="run-cases" min="1" max="40" value="15" style="width:72px" aria-label="Maximum mistakes to learn from">
+          mistakes</label>
+      </div>
+      <div class="actions" style="margin-top:12px">
+        <button type="submit" class="primary" id="run-btn" disabled>Start</button>
+        <span class="hint" id="run-estimate"></span>
+      </div>
+      <p class="hint" id="run-status" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+
+  <section class="card" id="current" hidden tabindex="-1" aria-live="polite">
+    <h2 id="current-title">Run</h2>
+    <div id="current-body"></div>
+  </section>
+
+  <section class="card" aria-labelledby="sets-title">
+    <h2 id="sets-title">Task sets</h2>
+    <p class="hint">Add tasks from the <a href="/">Judge page</a> (paste them, pick the correct answer, "Save task to set"),
+      or import a folder below.</p>
+    <div id="sets-list"></div>
+    <form id="new-set-form" class="actions" style="margin-top:12px">
+      <label class="sr-only" for="new-set">New set name</label>
+      <input type="text" id="new-set" placeholder="New set name, e.g. Test 1" style="max-width:280px">
+      <button type="submit" class="secondary">Create set</button>
+    </form>
+  </section>
+
+  <section class="card" id="set-detail" hidden tabindex="-1">
+    <h2 id="set-title">Set</h2>
+    <div id="set-body"></div>
+  </section>
+
+  <section class="card" id="knowledge" aria-labelledby="knowledge-title">
+    <h2 id="knowledge-title">Lessons &amp; guidelines</h2>
+    <p class="hint">Every training run saves a new version. The active one is used for judging everywhere.
+      You can also paste your project's own guidelines here; they're given to the judge with every task.</p>
+    <div id="knowledge-list"></div>
+    <details id="knowledge-edit" style="margin-top:12px">
+      <summary>Edit guidelines and lessons (saves a new version)</summary>
+      <form id="knowledge-form" style="margin-top:12px">
+        <label class="field" for="k-guidelines">Project guidelines</label>
+        <textarea id="k-guidelines" placeholder="Paste the instructions you follow when you pick the correct result."></textarea>
+        <label class="field" for="k-lessons" style="margin-top:12px">Lessons (one per line)</label>
+        <textarea id="k-lessons" style="min-height:160px"></textarea>
+        <div class="actions" style="margin-top:12px">
+          <button type="submit" class="primary">Save as new version</button>
+          <span class="hint" id="k-status" role="status" aria-live="polite"></span>
+        </div>
+      </form>
+    </details>
+  </section>
+</main>
+<script src="/static/common.js"></script>
+<script src="/static/train.js"></script>
+</body>
+</html>

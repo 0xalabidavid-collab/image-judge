@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in - Image Judge</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    main.login { max-width: 380px; margin: 12vh auto 0; padding: 0 16px; }
+    main.login label { display: block; font-weight: 600; margin: 14px 0 4px; }
+    main.login input { width: 100%; box-sizing: border-box; padding: 9px 10px; font: inherit; color: var(--text);
+      background: var(--surface); border: 1px solid var(--border); border-radius: 6px; }
+    main.login button { margin-top: 20px; width: 100%; min-height: 44px; }
+  </style>
+</head>
+<body>
+<header class="top"><h1>Image Judge</h1></header>
+<main class="login">
+  <section class="card">
+    <h2 style="margin-top:0">Sign in</h2>
+    <div id="error" class="banner error" role="alert" hidden></div>
+    <form id="login-form">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="username" required autofocus>
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+      <button class="primary" type="submit" id="submit">Sign in</button>
+    </form>
+    <p style="color:var(--muted);margin-bottom:0">Access is by invitation. Ask the owner for an account.</p>
+  </section>
+</main>
+<script src="/static/login.js"></script>
+</body>
+</html>

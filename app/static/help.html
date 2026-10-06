@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Help - Image Judge</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    main.help section.card h2 { margin-top: 0; }
+    main.help ol, main.help ul { padding-left: 22px; }
+    main.help li { margin: 6px 0; }
+    .good, .bad { padding: 8px 12px; border-radius: 8px; margin: 6px 0; }
+    .good { background: var(--ok-bg); color: var(--ok); }
+    .bad { background: var(--bad-bg); color: var(--bad); }
+    dl.terms dt { font-weight: 600; margin-top: 10px; }
+    dl.terms dd { margin: 2px 0 0; color: var(--muted); }
+  </style>
+</head>
+<body>
+<header class="top">
+  <h1>Image Judge</h1>
+  <nav aria-label="Main">
+    <a href="/">Judge</a>
+    <a href="/train">Train &amp; Test</a>
+    <a href="/lessons">Lessons</a>
+    <a href="/benchmark">Benchmark</a>
+    <a href="/help" aria-current="page">Help</a>
+  </nav>
+</header>
+<main class="help">
+  <section class="card">
+    <h2>What this tool is for</h2>
+    <p>An AI image editor was asked to do something (the <strong>request</strong>) and produced two
+      results, <strong>A</strong> and <strong>B</strong>. This tool asks an AI judge which result is the better
+      response to the request. <strong>You are the teacher:</strong> you check its answer, and when it is wrong
+      or unsure you say why. It learns from what you write, so your reasons matter more than the clicking.</p>
+  </section>
+
+  <section class="card">
+    <h2>Your routine (on the Judge page)</h2>
+    <ol>
+      <li><strong>Paste the request</strong> into the Prompt box.</li>
+      <li><strong>Add the images</strong>: the original image(s), then Result A, then Result B. Paste with
+        Ctrl+V (it fills the highlighted box), drag and drop, or click a box.</li>
+      <li>Press <strong>Evaluate</strong> and wait about a minute.</li>
+      <li><strong>Mark it.</strong> Decide for yourself which result is better, using your project's labelling
+        guidelines, then:
+        <ul>
+          <li>The judge picked the right one and was <em>Confident</em>: press <strong>Correct</strong>. Done.</li>
+          <li>It picked the wrong one: press <strong>Wrong</strong> and write one sentence saying why the other
+            result is better.</li>
+          <li>It was not sure but you know the answer: press <strong>A is correct</strong> or
+            <strong>B is correct</strong> and write why.</li>
+          <li>You genuinely cannot tell: press <strong>I'm not sure</strong>. Nothing is saved.</li>
+        </ul>
+      </li>
+    </ol>
+  </section>
+
+  <section class="card">
+    <h2>Writing a good reason</h2>
+    <p>One specific sentence about what you can <em>see</em>. Say what is wrong in the loser and what is right in
+      the winner.</p>
+    <div class="good"><strong>Good:</strong> A still shows the old logo in the corner; B replaced it with the new
+      one as asked.</div>
+    <div class="good"><strong>Good:</strong> B has six fingers on the left hand; A's hands look normal and it
+      did the requested colour change.</div>
+    <div class="bad"><strong>Not helpful:</strong> B is better. / A looks bad. / I prefer B.</div>
+    <p>Only write what you are sure of. A wrong reason teaches it something wrong, for everyone.</p>
+  </section>
+
+  <section class="card">
+    <h2>What the words mean</h2>
+    <dl class="terms">
+      <dt>Confident</dt>
+      <dd>Every check agreed, in both image orders. Still check it, since it can be confidently wrong.</dd>
+      <dt>Review</dt>
+      <dd>Most checks agreed but not all. Treat it as a leaning, not an answer.</dd>
+      <dt>Unclear</dt>
+      <dd>The checks disagreed, so it gives no verdict rather than guessing. Choose the answer yourself.</dd>
+      <dt>Your answer: "—"</dt>
+      <dd>You have not marked that evaluation yet. Open it from the list to mark it.</dd>
+      <dt>Lessons</dt>
+      <dd>Rules the judge has learned from corrections. New lessons are tested on other tasks before they are used.</dd>
+    </dl>
+  </section>
+
+  <section class="card">
+    <h2>The other pages</h2>
+    <ul>
+      <li><a href="/lessons"><strong>Lessons</strong></a>: what it has learned, who taught it, and whether each new
+        lesson passed its test. It also lists your earlier answers that still need a reason. Adding those is
+        very helpful.</li>
+      <li><strong>Train &amp; Test</strong> and <strong>Benchmark</strong>: for the project owner. They run big
+        batches and can change which lessons are in use for everyone, so leave them alone unless you were asked
+        to use them.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>Good to know</h2>
+    <ul>
+      <li>Your answers are saved with your email, so the owner can see who taught what.</li>
+      <li>If two people mark the same kind of task differently, it gets confused. When in doubt, follow the
+        written labelling guidelines, not personal taste.</li>
+      <li>If something looks broken, note the evaluation number (like #104) and tell the owner.</li>
+    </ul>
+  </section>
+</main>
+<script src="/static/common.js"></script>
+</body>
+</html>
