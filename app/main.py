@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import re
+import time
+import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal, Optional, Union
@@ -105,6 +107,7 @@ def create_app(db: Optional[DB] = None, judge=None) -> FastAPI:
     app.state.db = db or open_db(settings)
     app.state.judge = judge
     app.state.jobs = {}
+    app.state.eval_jobs = {}  # judgments in progress or just finished, by job id
     app.state.learning = {}               # evaluation id -> {"status": ..., "result"/"error": ...}
     app.state.learn_lock = asyncio.Lock()  # one merge at a time, or two corrections overwrite each other
     app.state.gate = {"status": "idle", "knowledge_id": None, "error": None}  # the auto-training test
@@ -241,6 +244,9 @@ def create_app(db: Optional[DB] = None, judge=None) -> FastAPI:
         if not prompt.strip():
             raise HTTPException(400, "Prompt is empty")
         prepared, images = await _read_task_images(originals, result_a, result_b)
+        return await run_evaluation(prompt, prepared, images, fresh)
+
+    async def run_evaluation(prompt: str, prepared, images: dict, fresh: bool) -> dict:
         task = Task(prompt=prompt, originals=prepared[:-2], a=prepared[-2], b=prepared[-1])
         cfg = current_config()
         result = await evaluate(task, cfg, get_judge(), db=db(), use_cache=not fresh)
@@ -248,6 +254,44 @@ def create_app(db: Optional[DB] = None, judge=None) -> FastAPI:
             raise HTTPException(502, result["aggregate"]["explanation"])
         eval_id = db().add_evaluation(prompt, images, cfg.as_dict(), result)
         return {"id": eval_id, **result}
+
+    # The page starts a judgment and checks on it, so a slow judgment never depends on one web request
+    # staying open (hosts close those after a few minutes).
+    @app.post("/api/evaluate/start")
+    async def evaluate_start(
+        prompt: str = Form(...),
+        originals: list[UploadFile] = File(...),
+        result_a: UploadFile = File(...),
+        result_b: UploadFile = File(...),
+        fresh: bool = Form(False),
+    ):
+        if not prompt.strip():
+            raise HTTPException(400, "Prompt is empty")
+        prepared, images = await _read_task_images(originals, result_a, result_b)
+        job_id = uuid.uuid4().hex
+        now = time.time()
+        jobs = app.state.eval_jobs
+        for old in [k for k, v in jobs.items() if now - v["started"] > 3600 and v["status"] != "running"]:
+            jobs.pop(old)  # finished jobs are kept for an hour, then forgotten (the result is in the history)
+        jobs[job_id] = {"status": "running", "started": now}
+
+        async def job():
+            try:
+                jobs[job_id].update(status="done", result=await run_evaluation(prompt, prepared, images, fresh))
+            except HTTPException as exc:
+                jobs[job_id].update(status="failed", error=str(exc.detail))
+            except Exception as exc:
+                jobs[job_id].update(status="failed", error=f"{type(exc).__name__}: {exc}")
+
+        app.state.jobs[f"eval-{job_id}"] = asyncio.create_task(job())
+        return {"job": job_id}
+
+    @app.get("/api/evaluate/jobs/{job_id}")
+    def evaluate_job(job_id: str):
+        job = app.state.eval_jobs.get(job_id)
+        if not job:
+            raise HTTPException(404, "That judgment is no longer tracked. Check the history list.")
+        return {k: v for k, v in job.items() if k != "started"}
 
     @app.post("/api/evaluations/{eval_id}/feedback")
     async def feedback(eval_id: int, body: Feedback):

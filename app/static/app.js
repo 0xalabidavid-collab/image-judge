@@ -149,7 +149,7 @@ $("#judge-form").addEventListener("submit", async e => {
   btn.disabled = true; btn.textContent = "Evaluating…";
   status("Running independent judge passes. This can take a minute or two.");
   try {
-    const data = await fetchJSON("/api/evaluate", { method: "POST", body: fd });
+    const data = await evaluateInBackground(fd);
     showResult(data);
     status("");
     loadHistory();
@@ -161,6 +161,30 @@ $("#judge-form").addEventListener("submit", async e => {
     btn.textContent = "Evaluate"; render();
   }
 });
+
+// Starts the judgment on the server and checks on it every few seconds until it is done.
+async function evaluateInBackground(formData) {
+  const { job } = await fetchJSON("/api/evaluate/start", { method: "POST", body: formData });
+  const started = Date.now();
+  let hiccups = 0;
+  for (;;) {
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    let st;
+    try {
+      st = await fetchJSON(`/api/evaluate/jobs/${job}`);
+      hiccups = 0;
+    } catch (err) {
+      if (++hiccups >= 5) throw err;  // a few dropped checks are fine; keep waiting
+      continue;
+    }
+    if (st.status === "done") return st.result;
+    if (st.status === "failed") throw new Error(st.error);
+    const minutes = Math.floor((Date.now() - started) / 60000);
+    if (minutes >= 30) throw new Error("This is taking over 30 minutes. If it finishes, it will appear in the history list.");
+    status(minutes >= 1 ? `Still judging (${minutes} min so far). Slow servers can take a few minutes, please wait.`
+                        : "Running independent judge passes. This can take a minute or two.");
+  }
+}
 
 function showResult(data, opts = {}) {
   const agg = data.aggregate;

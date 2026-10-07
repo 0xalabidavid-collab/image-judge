@@ -43,7 +43,8 @@ def hosted(db, tmp_path, monkeypatch):
     import app.auth as auth_mod
     real = auth_mod.SupabaseAuth
     monkeypatch.setattr(auth_mod, "SupabaseAuth", lambda url, key: real(url, key, client=fake_supabase()))
-    with TestClient(main.create_app(db=db), follow_redirects=False) as c:
+    from conftest import FakeJudge
+    with TestClient(main.create_app(db=db, judge=FakeJudge()), follow_redirects=False) as c:
         yield c
 
 
@@ -188,3 +189,15 @@ def test_with_no_owner_list_everyone_is_an_owner(hosted):
     sign_in(hosted)
     assert hosted.get("/train").status_code == 200
     assert hosted.get("/api/me").json()["owner"] is True
+
+
+def test_background_judgments_are_attributed_and_need_a_login(hosted, db):
+    import time
+    assert hosted.post("/api/evaluate/start", data={"prompt": "x"}, files=task_files(0)).status_code == 401
+    sign_in(hosted)
+    job = hosted.post("/api/evaluate/start", data={"prompt": "Make the circle green"}, files=task_files(0)).json()["job"]
+    end = time.time() + 20
+    while time.time() < end and hosted.get(f"/api/evaluate/jobs/{job}").json()["status"] == "running":
+        time.sleep(0.05)
+    assert hosted.get(f"/api/evaluate/jobs/{job}").json()["status"] == "done"
+    assert db._one("SELECT created_by FROM evaluations")["created_by"] == "ann@example.com"

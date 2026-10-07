@@ -122,3 +122,50 @@ def test_config_says_where_data_is_saved(client):
     assert storage["database_online"] is False and "not saved online" in storage["database"]
     assert storage["images_online"] is False and "not saved online" in storage["images"]
     assert "://" not in str(storage) and "key" not in str(storage).lower()  # words only: no addresses or keys
+
+
+@pytest.fixture
+def live_client(db, tmp_path, monkeypatch):
+    """A client whose event loop stays open between requests, so background jobs can finish."""
+    monkeypatch.setattr(main.settings, "upload_dir", tmp_path / "uploads", raising=False)
+    judge = FakeJudge(lambda t, swapped: ("B", "high"))
+    with TestClient(main.create_app(db=db, judge=judge)) as c:
+        yield c
+
+
+def wait_job(client, job, timeout=20):
+    import time
+    end = time.time() + timeout
+    while time.time() < end:
+        st = client.get(f"/api/evaluate/jobs/{job}").json()
+        if st["status"] != "running":
+            return st
+        time.sleep(0.05)
+    raise AssertionError("the background judgment did not finish")
+
+
+def test_background_evaluation_starts_then_finishes(live_client):
+    client = live_client
+    res = client.post("/api/evaluate/start", data={"prompt": "Make it green"}, files=files())
+    assert res.status_code == 200, res.text
+    st = wait_job(client, res.json()["job"])
+    assert st["status"] == "done"
+    body = st["result"]
+    assert body["aggregate"]["verdict"] == "B" and len(body["runs"]) == main.settings.judge.runs
+    assert client.get(f"/api/evaluations/{body['id']}").status_code == 200  # saved like a normal evaluation
+
+
+def test_background_evaluation_reports_a_failure_in_words(db, tmp_path, monkeypatch):
+    from app.judge import JudgeError
+    from conftest import FakeJudge
+    monkeypatch.setattr(main.settings, "upload_dir", tmp_path / "uploads", raising=False)
+    app = main.create_app(db=db, judge=FakeJudge(error=JudgeError("usage limit reached", fatal=True)))
+    with TestClient(app) as c:
+        job = c.post("/api/evaluate/start", data={"prompt": "Make it green"}, files=files()).json()["job"]
+        st = wait_job(c, job)
+    assert st["status"] == "failed" and "usage limit" in st["error"]
+
+
+def test_background_evaluation_checks_its_input_and_unknown_jobs(client):
+    assert client.post("/api/evaluate/start", data={"prompt": "  "}, files=files()).status_code == 400
+    assert client.get("/api/evaluate/jobs/doesnotexist").status_code == 404
