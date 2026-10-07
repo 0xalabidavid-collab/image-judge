@@ -135,6 +135,10 @@ class Settings:
     # SDK-level retries for 429 / 5xx / connection errors (exponential backoff).
     api_max_retries: int = int(os.environ.get("IMAGE_JUDGE_API_RETRIES", "5"))
     api_timeout_s: float = float(os.environ.get("IMAGE_JUDGE_API_TIMEOUT", "600"))
+    # When the API says "too many requests" even after the SDK's quick retries, wait this many seconds
+    # (comma-separated, one per extra try) before trying again. The API's own Retry-After hint wins.
+    rate_limit_waits_s: tuple = tuple(
+        float(w) for w in os.environ.get("IMAGE_JUDGE_RATE_WAITS", "10,20,40,60,60").split(",") if w.strip())
     max_upload_bytes: int = 25 * 1024 * 1024
     judge: JudgeConfig = field(default_factory=JudgeConfig)
 

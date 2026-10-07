@@ -139,3 +139,63 @@ def test_benchmark_aborts_on_fatal_error(tmp_path, db, monkeypatch):
     with pytest.raises(bm.BenchmarkAborted, match="credentials"):
         asyncio.run(bm.run_benchmark(tmp_path / "ds", CFG, judge, db))
     assert db.list_benchmarks()[0]["status"] == "failed"
+
+
+# --- rate limits: wait and try again instead of failing the judgment --------------------------
+import anthropic
+import httpx
+
+
+def rate_limit_error(retry_after=None):
+    headers = {"retry-after": str(retry_after)} if retry_after is not None else {}
+    response = httpx.Response(429, request=httpx.Request("POST", "https://api.example/v1/messages"), headers=headers)
+    return anthropic.RateLimitError("slow down", response=response, body=None)
+
+
+class RateLimitedClient(FakeClient):
+    """Says 'too many requests' for the first `limited` calls, then answers normally."""
+
+    def __init__(self, limited, retry_after=None, **kw):
+        super().__init__(**kw)
+        self.limited, self.retry_after, self.calls = limited, retry_after, 0
+
+    def _stream(self, **kwargs):
+        self.calls += 1
+        if self.calls <= self.limited:
+            err = rate_limit_error(self.retry_after)
+
+            class Refused(FakeStream):
+                async def __aenter__(self):
+                    raise err
+            return Refused(None)
+        return super()._stream(**kwargs)
+
+
+@pytest.fixture
+def sleeps(monkeypatch):
+    waited = []
+
+    async def fake_sleep(seconds):
+        waited.append(seconds)
+    monkeypatch.setattr("app.judge.asyncio.sleep", fake_sleep)
+    monkeypatch.setattr("app.judge.settings.rate_limit_waits_s", (10.0, 20.0, 40.0), raising=False)
+    return waited
+
+
+def test_a_busy_spell_is_waited_out(sleeps):
+    client = RateLimitedClient(limited=2)
+    out = asyncio.run(AnthropicJudge(client).judge_once(task(), CFG, swapped=False, notes=[]))
+    assert out["judgment"]["verdict"] == "B" and client.calls == 3
+    assert sleeps == [10.0, 20.0]  # the configured waits, in order
+
+
+def test_the_apis_own_retry_after_hint_wins(sleeps):
+    asyncio.run(AnthropicJudge(RateLimitedClient(limited=1, retry_after=7)).judge_once(task(), CFG, False, []))
+    assert sleeps == [7.0]
+
+
+def test_it_gives_up_after_the_last_wait(sleeps):
+    client = RateLimitedClient(limited=99)
+    with pytest.raises(JudgeError, match="Rate limited"):
+        asyncio.run(AnthropicJudge(client).judge_once(task(), CFG, False, []))
+    assert client.calls == 4 and sleeps == [10.0, 20.0, 40.0]  # 1 try + 3 waits

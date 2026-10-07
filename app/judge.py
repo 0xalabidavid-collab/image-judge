@@ -145,6 +145,28 @@ class AnthropicJudge(JsonJudge):
             timeout=settings.api_timeout_s,
         )
 
+    @staticmethod
+    def _retry_after(exc) -> Optional[float]:
+        """The API's own 'try again in N seconds' hint, if it sent one."""
+        try:
+            value = float(exc.response.headers.get("retry-after", ""))
+        except (AttributeError, TypeError, ValueError):
+            return None
+        return min(max(value, 1.0), 120.0)
+
+    async def _stream(self, messages_api, kwargs):
+        """One request. If rate limited even after the SDK's quick retries, wait and try again, so a short
+        busy spell does not fail the whole judgment."""
+        waits = settings.rate_limit_waits_s
+        for attempt in range(len(waits) + 1):
+            try:
+                async with messages_api.stream(**kwargs) as stream:
+                    return await stream.get_final_message()
+            except anthropic.RateLimitError as exc:
+                if attempt == len(waits):
+                    raise
+                await asyncio.sleep(self._retry_after(exc) or waits[attempt])
+
     async def complete_json(self, system: str, content: list, schema: dict, config: JudgeConfig) -> dict:
         kwargs = dict(
             model=config.model,
@@ -175,8 +197,7 @@ class AnthropicJudge(JsonJudge):
             messages_api = self.client.beta.messages
 
         try:
-            async with messages_api.stream(**kwargs) as stream:
-                message = await stream.get_final_message()
+            message = await self._stream(messages_api, kwargs)
         except anthropic.AuthenticationError as exc:
             raise JudgeError("Anthropic API key missing or invalid (set ANTHROPIC_API_KEY).", fatal=True) from exc
         except anthropic.PermissionDeniedError as exc:
