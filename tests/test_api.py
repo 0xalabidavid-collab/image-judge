@@ -115,3 +115,10 @@ def test_every_page_is_served_and_linked_from_the_menu(client):
         assert res.status_code == 200 and "text/html" in res.headers["content-type"], path
         for other in pages[1:]:
             assert f'href="{other}"' in res.text, f"{path} has no menu link to {other}"
+
+
+def test_config_says_where_data_is_saved(client):
+    storage = client.get("/api/config").json()["storage"]
+    assert storage["database_online"] is False and "not saved online" in storage["database"]
+    assert storage["images_online"] is False and "not saved online" in storage["images"]
+    assert "://" not in str(storage) and "key" not in str(storage).lower()  # words only: no addresses or keys

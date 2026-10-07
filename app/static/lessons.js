@@ -140,6 +140,14 @@ fetch("/api/me").then(r => (r.ok ? r.json() : null)).then(me => {
   }
 }).catch(() => {});
 
+fetch("/api/config").then(r => r.json()).then(c => {
+  const s = c.storage;
+  if (!s) return;
+  const ok = s.database_online && s.images_online;
+  $("#storage").innerHTML = `${ok ? "✓" : "⚠"} Answers are saved to: <strong>${esc(s.database)}</strong> · Images are saved to: <strong>${esc(s.images)}</strong>`
+    + (ok ? "" : ` — <strong>work done now will be lost when the app restarts.</strong>`);
+}).catch(() => {});
+
 load();
 }
 

@@ -154,6 +154,17 @@ def create_app(db: Optional[DB] = None, judge=None) -> FastAPI:
     def benchmark_page():
         return FileResponse(STATIC / "benchmark.html")
 
+    def storage_status() -> dict:
+        """Where answers and images are saved, in words (no addresses or keys)."""
+        online_db = type(db()).__name__ == "PostgresDB"
+        backend = get_store().backend
+        return {
+            "database": "Supabase (online)" if online_db else "local file (not saved online)",
+            "database_online": online_db,
+            "images": backend.label if backend else "local folder only (not saved online)",
+            "images_online": backend is not None,
+        }
+
     @app.get("/api/config")
     def config():
         active = db().active_knowledge()
@@ -162,6 +173,7 @@ def create_app(db: Optional[DB] = None, judge=None) -> FastAPI:
             "rubric_versions": sorted(RUBRICS),
             "provider": provider_of(settings.judge.model),
             "api_key_configured": has_key(provider_of(settings.judge.model)),
+            "storage": storage_status(),
             "active_knowledge": None if not active else {"id": active["id"], "lessons": len(active["lessons"])},
         }
 
